@@ -1,0 +1,38 @@
+server:
+  port: 8082
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+    rest-enabled: true
+    database:
+      schema-update: true
+  base-url: http://localhost:8081/engine-rest
+  history-time-to-live: 1
+
+
+spring:
+  docker:
+    compose:
+      enabled: false
+  profiles:
+    active: dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/psiko_bpm
+    username: camunda
+    password: camunda
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+logging:
+  level:
+    org.camunda: INFO
+    com.example: DEBUG
+  file:
+    name: application.log
