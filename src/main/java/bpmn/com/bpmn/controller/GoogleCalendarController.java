@@ -10,21 +10,20 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/bpmn")
+@RequestMapping("/api/google-calendar")
 @RequiredArgsConstructor
-public class BpmnController {
+public class GoogleCalendarController {
 
     private final ZeebeClient zeebeClient;
 
-    @PostMapping("/patient/start-process")
-    public ResponseEntity<String> startPatientProcess(@RequestBody Map<String, Object> patientData) {
+    @PostMapping("/start-process")
+    public ResponseEntity<String> startGoogleCalendarProcess(@RequestBody Map<String, Object> eventData) {
         try {
             String businessKey = UUID.randomUUID().toString();
-
             ProcessInstanceEvent processInstance = zeebeClient.newCreateInstanceCommand()
-                    .bpmnProcessId("Process_Patient_Therapist_ID") // BPMN Model'deki Process ID ile aynı olmalı
+                    .bpmnProcessId("GoogleCalendarIntegrationProcess")
                     .latestVersion()
-                    .variables(patientData)
+                    .variables(eventData)
                     .send()
                     .join();
 

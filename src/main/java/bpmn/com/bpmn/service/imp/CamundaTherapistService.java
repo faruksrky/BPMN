@@ -1,7 +1,8 @@
 package bpmn.com.bpmn.service.imp;
 
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -9,31 +10,33 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class CamundaTherapistService {
 
-    private final RuntimeService runtimeService;
+    private final ZeebeClient zeebeClient;
 
-    public CamundaTherapistService(RuntimeService runtimeService) {
-        this.runtimeService = runtimeService;
-    }
-
+    /**
+     * ✅ Camunda 8 Zeebe ile Hasta Kayıt Sürecini Başlatır
+     */
     public String startProcess(Map<String, Object> patientData) {
         Map<String, Object> variables = new HashMap<>(patientData);
-        variables.put("businessKey", UUID.randomUUID().toString());
+        String businessKey = UUID.randomUUID().toString();
+        variables.put("businessKey", businessKey);
 
         try {
-            ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Process_Patient", variables);
-            return processInstance.getId();
+            // 📌 Zeebe Sürecini Başlat
+            ProcessInstanceEvent processInstance = zeebeClient
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("Process_Patient")
+                    .latestVersion()
+                    .variables(variables)
+                    .send()
+                    .join();
+
+            // ✅ Primitive long değerini String'e çevir
+            return String.valueOf(processInstance.getProcessInstanceKey());
         } catch (Exception e) {
-            throw new RuntimeException("Process start failed", e);
+            throw new RuntimeException("Zeebe process start failed", e);
         }
     }
-
 }
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 services:
   postgres:
-    image: postgres:13
-    container_name: postgres-1
+    image: postgres:latest
+    container_name: postgresPsikoHekim
     ports:
       - "5433:5432"
     environment:
@@ -9,24 +9,72 @@ services:
       POSTGRES_PASSWORD: camunda
       POSTGRES_DB: psiko_bpm
     restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  camunda:
-    image: camunda/camunda-bpm-platform:latest
-    container_name: camunda-service
+  zeebe:
+    image: camunda/zeebe:latest
+    container_name: zeebe-broker
+    environment:
+      - ZEEBE_LOG_LEVEL=info
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=1
+      - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=1
+      - ZEEBE_GATEWAY_SECURITY_ENABLED=false
+    ports:
+      - "26500:26500"
+
+  operate:
+    image: camunda/operate:latest
+    container_name: camunda-operate
+    environment:
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_OPERATE_CSRFPREVENTIONENABLED=false
     ports:
       - "8081:8080"
-    environment:
-      - DB_DRIVER=org.postgresql.Driver
-      - DB_URL=jdbc:postgresql://postgres:5432/psiko_bpm
-      - DB_USERNAME=camunda
-      - DB_PASSWORD=camunda
-      - WAIT_FOR_DB=postgres:5432
-      - TZ=Europe/Istanbul
-      - CAMUNDA_BPM_ADMIN_USER=admin
-      - CAMUNDA_BPM_ADMIN_PASSWORD=admin
     depends_on:
-      - postgres
-    restart: always
+      elasticsearch:
+        condition: service_healthy
+      zeebe:
+        condition: service_started
+
+  tasklist:
+    image: camunda/tasklist:latest
+    container_name: camunda-tasklist
+    environment:
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
+    ports:
+      - "8084:8080"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      zeebe:
+        condition: service_started
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 30s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
 
 volumes:
-  postgres_data: {}
+  postgres_data:
+  elasticsearch_data:

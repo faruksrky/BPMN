@@ -1,16 +1,21 @@
 server:
   port: 8082
-camunda:
-  bpm:
-    admin-user:
-      id: admin
-      password: admin
-    rest-enabled: true
-    database:
-      schema-update: true
-  base-url: http://localhost:8081/engine-rest
-  history-time-to-live: 1
 
+zeebe:
+  client:
+    url: http://localhost:26500
+    security:
+      plaintext: true
+  autoDeploymentEnabled: false
+  job-executor:
+    enabled: true
+  database:
+    schema-update: true
+
+
+bpmn:
+  service:
+    url: http://localhost:8083
 
 spring:
   docker:
@@ -30,9 +35,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
 logging:
   level:
     org.camunda: INFO
     com.example: DEBUG
   file:
     name: application.log
+
