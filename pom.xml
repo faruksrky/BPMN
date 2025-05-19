@@ -53,34 +53,21 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ Camunda 8 Zeebe Dependencies -->
+        <!-- 1️⃣ Otomatik BPMN deploy, Zeebe bağlantısı ve Spring entegrasyonu için -->
         <dependency>
             <groupId>io.camunda</groupId>
             <artifactId>spring-zeebe-starter</artifactId>
             <version>8.5.16</version>
         </dependency>
 
-
-        <!-- ✅ Zeebe Worker (Spring Boot için) -->
+        <!-- 2️⃣ Manuel Zeebe client kullanımı için (opsiyonel, sadece complex senaryolarda gerekli) -->
         <dependency>
             <groupId>io.camunda</groupId>
             <artifactId>zeebe-client-java</artifactId>
-            <version>8.3.1</version>
+            <version>8.5.7</version> <!-- spring-zeebe-starter ile AYNI versiyon olmalı -->
         </dependency>
 
-        <!-- ✅ Google OAuth and Calendar API -->
-        <dependency>
-            <groupId>com.google.api-client</groupId>
-            <artifactId>google-api-client</artifactId>
-            <version>2.2.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-calendar</artifactId>
-            <version>v3-rev411-1.25.0</version>
-        </dependency>
-
+        <!-- ✅ Feing Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-feign</artifactId>

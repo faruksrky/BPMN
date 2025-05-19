@@ -11,11 +11,11 @@ import java.util.Map;
 @FeignClient(name = "therapist-service", url = "http://localhost:8083")
 public interface TherapistFeignClient {
 
-    @PostMapping("/patient/addPatient") // Hasta kaydı için
-    Map<String, Object> registerPatient(@RequestBody Map<String, Object> patientData);
+    @PostMapping("/therapist/send-assignment-request")
+    Map<String, Object> sendAssignmentRequest(@RequestBody Map<String, Object> request);
 
-    @GetMapping("/therapist/all") // Müsait terapistleri getir
-    Map<String, Object> getAvailableTherapists();
+    @PostMapping("/therapist/assign")
+    Map<String, Object> assignTherapistToPatient(@RequestBody Map<String, Object> assignRequest);
 
     @GetMapping("/api/google-calendar/redirect-to-google-oauth")
     Map<String, String> getGoogleOAuthUrl();
@@ -25,7 +25,4 @@ public interface TherapistFeignClient {
 
     @GetMapping("/api/google-calendar/fetch-google-calendar-events")
     Map<String, Object> fetchGoogleCalendarEvents(@RequestParam("accessToken") String accessToken);
-
-
-
 }

@@ -1,29 +1,39 @@
 server:
   port: 8082
 
-zeebe:
+camunda:
   client:
-    url: http://localhost:26500
+    zeebe:
+      base-url: http://localhost:26500
     security:
       plaintext: true
-  autoDeploymentEnabled: false
-  job-executor:
+      override-authority: false
+  autoDeploymentEnabled: true
+  deployment:
+    resources:
+      - classpath*:/bpmn/*.bpmn
     enabled: true
-  database:
-    schema-update: true
-
-
-bpmn:
-  service:
-    url: http://localhost:8083
+    executable: true
+    location: classpath:/bpmn/
+    scanForProcessDefinitions: true
+    defaultTenantId: <default>
+  operate:
+    url: http://localhost:8081
+    username: demo
+    password: demo
+  tasklist:
+    url: http://localhost:8084
+    username: demo
+    password: demo
 
 spring:
   docker:
     compose:
-      enabled: false
+      enabled: true
   profiles:
     active: dev
-
+  application:
+    name: bpmn-application
   datasource:
     url: jdbc:postgresql://localhost:5433/psiko_bpm
     username: camunda
@@ -35,11 +45,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
 
 logging:
   level:
     org.camunda: INFO
     com.example: DEBUG
+    io.camunda.zeebe: INFO
+    io.camunda.operate: DEBUG
   file:
     name: application.log
-

@@ -11,8 +11,14 @@ services:
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U camunda"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   zeebe:
+    platform: linux/amd64
     image: camunda/zeebe:latest
     container_name: zeebe-broker
     environment:
@@ -21,10 +27,15 @@ services:
       - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=1
       - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=1
       - ZEEBE_GATEWAY_SECURITY_ENABLED=false
+      - ZEEBE_BROKER_GATEWAY_HOST=0.0.0.0
     ports:
       - "26500:26500"
+      - "9600:9600"
+    volumes:
+      - zeebe_data:/usr/local/zeebe/data
 
   operate:
+    platform: linux/amd64
     image: camunda/operate:latest
     container_name: camunda-operate
     environment:
@@ -42,6 +53,7 @@ services:
         condition: service_started
 
   tasklist:
+    platform: linux/amd64
     image: camunda/tasklist:latest
     container_name: camunda-tasklist
     environment:
@@ -64,6 +76,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
     volumes:
@@ -78,3 +91,4 @@ services:
 volumes:
   postgres_data:
   elasticsearch_data:
+  zeebe_data:
