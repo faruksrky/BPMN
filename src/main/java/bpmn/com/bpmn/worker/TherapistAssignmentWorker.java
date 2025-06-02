@@ -53,10 +53,7 @@ public class TherapistAssignmentWorker {
 
     private void handleSendAssignmentRequest(JobClient client, ActivatedJob job) {
         try {
-            Map<String, Object> request = createRequestFromJob(job, "patientId", "therapistId");
-            log.info("Processing send-assignment-request for patientId: {} and therapistId: {}",
-                    request.get("patientId"), request.get("therapistId"));
-
+            Map<String, Object> request = createRequestFromJob(job);
             therapistFeignClient.sendAssignmentRequest(request);
             completeJob(client, job);
 
@@ -68,16 +65,10 @@ public class TherapistAssignmentWorker {
 
     private void handleAssignTherapist(JobClient client, ActivatedJob job) {
         try {
-            Map<String, Object> request = createRequestFromJob(job, "patientId", "therapistId");
-            request.put("status", 1);
-
-            log.info("Processing assign-therapist for patientId: {} and therapistId: {}",
-                    request.get("patientId"), request.get("therapistId"));
-
-            therapistFeignClient.assignTherapistToPatient(request);
+            // Sadece job'ı tamamla, çünkü atama işlemi zaten ProcessServiceImpl'de yapıldı
             completeJob(client, job);
-
-            log.info("Successfully completed assign-therapist");
+            log.info("Successfully completed assign-therapist job for processInstanceKey: {}",
+                    job.getVariablesAsMap().get("processInstanceKey"));
         } catch (Exception e) {
             handleError(client, job, e, "assign-therapist");
         }
@@ -85,29 +76,28 @@ public class TherapistAssignmentWorker {
 
     private void handleRejectAssignment(JobClient client, ActivatedJob job) {
         try {
-            Map<String, Object> request = createRequestFromJob(job, "patientId", "therapistId");
-            request.put("status", 0);
-
-            log.info("Processing reject-assignment for patientId: {} and therapistId: {}",
-                    request.get("patientId"), request.get("therapistId"));
-
-            therapistFeignClient.assignTherapistToPatient(request);
             completeJob(client, job);
-
             log.info("Successfully completed reject-assignment");
         } catch (Exception e) {
             handleError(client, job, e, "reject-assignment");
         }
     }
 
-    private Map<String, Object> createRequestFromJob(ActivatedJob job, String... requiredVars) {
+    private Map<String, Object> createRequestFromJob(ActivatedJob job) {
         Map<String, Object> vars = job.getVariablesAsMap();
-        validateRequiredVariables(vars, requiredVars);
-
+        // Tüm değişkenleri al
         Map<String, Object> request = new HashMap<>();
-        for (String var : requiredVars) {
-            request.put(var, String.valueOf(vars.get(var)));
-        }
+
+        // processInstanceKey'i job'dan al
+        String processInstanceKey = String.valueOf(job.getProcessInstanceKey());
+        request.put("patientId", String.valueOf(vars.get("patientId")));
+        request.put("processInstanceKey", processInstanceKey); // Job'dan alınan key'i kullan
+        request.put("therapistId", String.valueOf(vars.get("therapistId")));
+        request.put("processName", String.valueOf(vars.get("processName")));
+        request.put("description", String.valueOf(vars.get("description")));
+        request.put("startedBy", String.valueOf(vars.get("startedBy")));
+        request.put("createdAt", vars.get("createdAt"));
+        request.put("updatedAt", vars.get("updatedAt"));
 
         return request;
     }

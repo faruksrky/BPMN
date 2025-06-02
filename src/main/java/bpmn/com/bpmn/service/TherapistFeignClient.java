@@ -11,7 +11,7 @@ import java.util.Map;
 @FeignClient(name = "therapist-service", url = "http://localhost:8083")
 public interface TherapistFeignClient {
 
-    @PostMapping("/therapist/send-assignment-request")
+    @PostMapping("/process/send-assignment-request")
     Map<String, Object> sendAssignmentRequest(@RequestBody Map<String, Object> request);
 
     @PostMapping("/therapist/assign")

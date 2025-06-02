@@ -35,7 +35,7 @@ spring:
   application:
     name: bpmn-application
   datasource:
-    url: jdbc:postgresql://localhost:5433/psiko_bpm
+    url: jdbc:postgresql://localhost:5433/camunda
     username: camunda
     password: camunda
     driver-class-name: org.postgresql.Driver

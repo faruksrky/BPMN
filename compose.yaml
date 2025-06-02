@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:latest
@@ -7,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: camunda
       POSTGRES_PASSWORD: camunda
-      POSTGRES_DB: psiko_bpm
+      POSTGRES_DB: camunda
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -17,9 +19,43 @@ services:
       timeout: 5s
       retries: 5
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - "cluster.name=docker-cluster"
+      - "bootstrap.memory_lock=false"
+      - "network.host=0.0.0.0"
+      - "http.port=9200"
+      - "transport.port=9300"
+      - "http.cors.enabled=true"
+      - "http.cors.allow-origin=*"
+      - "action.auto_create_index=true"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 30s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
   zeebe:
     platform: linux/amd64
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.2.0
     container_name: zeebe-broker
     environment:
       - ZEEBE_LOG_LEVEL=info
@@ -28,15 +64,29 @@ services:
       - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=1
       - ZEEBE_GATEWAY_SECURITY_ENABLED=false
       - ZEEBE_BROKER_GATEWAY_HOST=0.0.0.0
+      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
+      - ZEEBE_BROKER_NETWORK_ADVERTISEDHOST=zeebe
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY=5
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=zeebe-record
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_CREATE_TEMPLATE=true
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RECORD_TYPES=command,command_rejection,event,deployment,error,incident,job,message,message_subscription,process,process_event,process_instance,process_instance_creation,process_message_subscription,timer,variable,decision,decision_requirements,decision_evaluation
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_SHOULD_CREATE_TEMPLATE=true
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_SHOULD_CREATE_INDEX=true
     ports:
       - "26500:26500"
       - "9600:9600"
     volumes:
       - zeebe_data:/usr/local/zeebe/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
   operate:
     platform: linux/amd64
-    image: camunda/operate:latest
+    image: camunda/operate:8.2.0
     container_name: camunda-operate
     environment:
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
@@ -44,6 +94,17 @@ services:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ZEEBE_ELASTICSEARCH_CLUSTERNAME=docker-cluster
       - CAMUNDA_OPERATE_CSRFPREVENTIONENABLED=false
+      - CAMUNDA_OPERATE_AUTHENTICATION_MODE=simple
+      - CAMUNDA_OPERATE_AUTHENTICATION_SIMPLE_DEFAULT_USERNAME=demo
+      - CAMUNDA_OPERATE_AUTHENTICATION_SIMPLE_DEFAULT_PASSWORD=demo
+      - CAMUNDA_OPERATE_ELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_OPERATE_ELASTICSEARCH_HOST=elasticsearch
+      - CAMUNDA_OPERATE_ELASTICSEARCH_PORT=9200
+      - CAMUNDA_OPERATE_ELASTICSEARCH_SCHEME=http
+      - CAMUNDA_OPERATE_ELASTICSEARCH_PREFIX=zeebe-record
+      - CAMUNDA_OPERATE_ELASTICSEARCH_CREATE_INDICES=true
+      - CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_SHARDS=1
+      - CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS=0
     ports:
       - "8081:8080"
     depends_on:
@@ -54,7 +115,7 @@ services:
 
   tasklist:
     platform: linux/amd64
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:8.2.0
     container_name: camunda-tasklist
     environment:
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
@@ -62,6 +123,17 @@ services:
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
+      - CAMUNDA_TASKLIST_AUTHENTICATION_MODE=simple
+      - CAMUNDA_TASKLIST_AUTHENTICATION_SIMPLE_DEFAULT_USERNAME=demo
+      - CAMUNDA_TASKLIST_AUTHENTICATION_SIMPLE_DEFAULT_PASSWORD=demo
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_HOST=elasticsearch
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_PORT=9200
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_SCHEME=http
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_PREFIX=zeebe-record
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_CREATE_INDICES=true
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_NUMBER_OF_SHARDS=1
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_NUMBER_OF_REPLICAS=0
     ports:
       - "8084:8080"
     depends_on:
@@ -69,24 +141,6 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_started
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
-      interval: 30s
-      retries: 5
-      start_period: 30s
-      timeout: 10s
 
 volumes:
   postgres_data:
