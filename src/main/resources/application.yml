@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: ${PORT:8082}  # Railway PORT env var'ını kullan, yoksa 8082
 
 camunda:
   client:
@@ -36,8 +36,8 @@ spring:
     name: bpmn-application
   datasource:
     url: jdbc:postgresql://localhost:5433/camunda
-    username: camunda
-    password: camunda
+    username: UserPsiko
+    password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

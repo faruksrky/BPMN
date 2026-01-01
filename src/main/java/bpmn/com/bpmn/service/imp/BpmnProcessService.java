@@ -105,4 +105,30 @@ public class BpmnProcessService {
                 .send()
                 .join();
     }
+
+    public Map<String, Object> getProcessInfo(String processInstanceKey) {
+        try {
+            // Process instance key'i long'a çevir
+            long key = Long.parseLong(processInstanceKey);
+            
+            // Zeebe'den process bilgilerini al (basit implementasyon)
+            Map<String, Object> processInfo = new HashMap<>();
+            processInfo.put("processInstanceKey", processInstanceKey);
+            processInfo.put("status", "ACTIVE"); // Basit durum
+            processInfo.put("bpmnProcessId", "Process_Patient_Registration");
+            processInfo.put("version", 1);
+            processInfo.put("timestamp", LocalDateTime.now().toString());
+            
+            // Gerçek implementasyonda Zeebe Operate API'si kullanılacak
+            // Şimdilik basit bir response döndürüyoruz
+            return processInfo;
+            
+        } catch (Exception e) {
+            Map<String, Object> errorInfo = new HashMap<>();
+            errorInfo.put("error", "Process bilgisi alınamadı");
+            errorInfo.put("message", e.getMessage());
+            errorInfo.put("processInstanceKey", processInstanceKey);
+            return errorInfo;
+        }
+    }
 }

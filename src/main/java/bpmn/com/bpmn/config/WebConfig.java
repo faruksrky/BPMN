@@ -18,12 +18,18 @@ public class WebConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(request -> {
             var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-            corsConfiguration.setAllowedOrigins(List.of("http://localhost:3031"));
+            corsConfiguration.setAllowedOriginPatterns(List.of(
+            "http://localhost:3031",  // Local development
+                    // Cloudflare Pages Production
+                    "https://*.psikohekimfrontend.pages.dev",
+                    "https://*.iyihislerapp.com"
+            ));// Cloudflare preview deployments (opsiyonel)
             corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
             corsConfiguration.setAllowedHeaders(List.of("*"));
             corsConfiguration.setAllowCredentials(true);
             return corsConfiguration;
         }));
+
 
         http.csrf(csrf -> csrf.disable());
 

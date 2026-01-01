@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.33.1">
+  <bpmn:process id="Process_Patient_Registration" name="Danışman Atama Süreci" isExecutable="true">
+    <bpmn:startEvent id="StartEvent" name="Decided Therapist">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="SendAssignmentRequest" name="Send Request To Therapist">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="send-assignment-request" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:intermediateCatchEvent id="WaitTherapistDecision" name="Wait Therapist Decision">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_Therapist_Decision" />
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:exclusiveGateway id="TherapistDecisionGateway" name="is Accept Therapist">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="AssignTherapist" name="Assign Therapist (Status=1)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="assign-therapist" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="RejectAssignment" name="Reject Assignment (Status=0)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reject-assignment" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndSuccess" name="Assignment Successful">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndRejected" name="Assignment Failed">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent" targetRef="SendAssignmentRequest" />
+
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="SendAssignmentRequest" targetRef="WaitTherapistDecision" />
+
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="WaitTherapistDecision" targetRef="TherapistDecisionGateway" />
+
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="TherapistDecisionGateway" targetRef="AssignTherapist">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=TherapistDecision = "accepted"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="TherapistDecisionGateway" targetRef="RejectAssignment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=TherapistDecision = "rejected"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="AssignTherapist" targetRef="EndSuccess" />
+
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="RejectAssignment" targetRef="EndRejected" />
+  </bpmn:process>
+
+  <bpmn:message id="Message_Therapist_Decision" name="therapist_decision">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=patientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Patient_Registration">
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
+        <dc:Bounds x="182" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="155" y="222" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="SendAssignmentRequest_di" bpmnElement="SendAssignmentRequest">
+        <dc:Bounds x="300" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="WaitTherapistDecision_di" bpmnElement="WaitTherapistDecision">
+        <dc:Bounds x="482" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="469" y="215" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="TherapistDecisionGateway_di" bpmnElement="TherapistDecisionGateway" isMarkerVisible="true">
+        <dc:Bounds x="605" y="165" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="667" y="176" width="46" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="AssignTherapist_di" bpmnElement="AssignTherapist">
+        <dc:Bounds x="760" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="RejectAssignment_di" bpmnElement="RejectAssignment">
+        <dc:Bounds x="760" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="EndSuccess_di" bpmnElement="EndSuccess">
+        <dc:Bounds x="1002" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="991" y="145" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="EndRejected_di" bpmnElement="EndRejected">
+        <dc:Bounds x="1002" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="994" y="305" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="218" y="190" />
+        <di:waypoint x="300" y="190" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="400" y="190" />
+        <di:waypoint x="482" y="190" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="518" y="190" />
+        <di:waypoint x="605" y="190" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="630" y="165" />
+        <di:waypoint x="630" y="120" />
+        <di:waypoint x="760" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="636" y="133" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="630" y="215" />
+        <di:waypoint x="630" y="280" />
+        <di:waypoint x="760" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="636" y="243" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="860" y="120" />
+        <di:waypoint x="1002" y="120" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="860" y="280" />
+        <di:waypoint x="1002" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
