@@ -35,11 +35,11 @@ spring:
   application:
     name: bpmn-application
   datasource:
-    # Railway DATABASE_URL otomatik parse ediliyor (RailwayDatabaseConfig.java)
-    # Eğer DATABASE_URL yoksa, environment variable'lar veya default değerler kullanılır
-    url: ${DB_URL:${DATABASE_URL:jdbc:postgresql://localhost:5433/camunda}}
-    username: ${DB_USERNAME:UserPsiko}
-    password: ${DB_PASSWORD:password}
+    # Local development için default değerler
+    # Railway DATABASE_URL varsa RailwayDatabaseConfig bunları override eder
+    url: jdbc:postgresql://localhost:5433/camunda
+    username: UserPsiko
+    password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
