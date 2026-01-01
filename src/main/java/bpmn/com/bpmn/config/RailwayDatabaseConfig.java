@@ -1,40 +1,52 @@
 package bpmn.com.bpmn.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
-@Configuration
-public class RailwayDatabaseConfig {
+/**
+ * Railway DATABASE_URL environment variable'ını parse edip
+ * Spring Boot datasource ayarlarına çevirir.
+ * ApplicationContext başlamadan önce çalışır.
+ */
+public class RailwayDatabaseConfig implements EnvironmentPostProcessor {
 
-    @Value("${spring.datasource.url:}")
-    private String datasourceUrl;
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void parseRailwayDatabaseUrl() {
+    @Override
+    public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         String databaseUrl = System.getenv("DATABASE_URL");
+        
         if (databaseUrl != null && databaseUrl.startsWith("postgresql://")) {
             try {
                 // Railway DATABASE_URL format: postgresql://user:password@host:port/database
                 URI dbUri = new URI(databaseUrl.replace("postgresql://", "http://"));
-                String username = dbUri.getUserInfo().split(":")[0];
-                String password = dbUri.getUserInfo().split(":")[1];
-                String host = dbUri.getHost();
-                int port = dbUri.getPort();
-                String database = dbUri.getPath().replaceFirst("/", "");
+                String userInfo = dbUri.getUserInfo();
                 
-                String jdbcUrl = String.format("jdbc:postgresql://%s:%d/%s", host, port, database);
-                
-                // System properties olarak set et (Spring Boot bunları kullanabilir)
-                System.setProperty("spring.datasource.url", jdbcUrl);
-                System.setProperty("spring.datasource.username", username);
-                System.setProperty("spring.datasource.password", password);
-                
-                System.out.println("✅ Railway DATABASE_URL parsed successfully");
-                System.out.println("   JDBC URL: jdbc:postgresql://" + host + ":" + port + "/" + database);
+                if (userInfo != null && userInfo.contains(":")) {
+                    String username = userInfo.split(":")[0];
+                    String password = userInfo.split(":")[1];
+                    String host = dbUri.getHost();
+                    int port = dbUri.getPort();
+                    String database = dbUri.getPath().replaceFirst("/", "");
+                    
+                    String jdbcUrl = String.format("jdbc:postgresql://%s:%d/%s", host, port, database);
+                    
+                    Map<String, Object> properties = new HashMap<>();
+                    properties.put("spring.datasource.url", jdbcUrl);
+                    properties.put("spring.datasource.username", username);
+                    properties.put("spring.datasource.password", password);
+                    
+                    environment.getPropertySources().addFirst(
+                        new MapPropertySource("railway-database", properties)
+                    );
+                    
+                    System.out.println("✅ Railway DATABASE_URL parsed successfully");
+                    System.out.println("   JDBC URL: " + jdbcUrl);
+                }
             } catch (Exception e) {
                 System.err.println("⚠️  DATABASE_URL parse hatası: " + e.getMessage());
                 e.printStackTrace();

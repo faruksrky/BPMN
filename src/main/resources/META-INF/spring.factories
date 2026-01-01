@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=bpmn.com.bpmn.config.RailwayDatabaseConfig
+
