@@ -29,15 +29,17 @@ camunda:
 spring:
   docker:
     compose:
-      enabled: true
+      enabled: false  # Railway'da Docker Compose kullanılmıyor
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
     name: bpmn-application
   datasource:
-    url: jdbc:postgresql://localhost:5433/camunda
-    username: UserPsiko
-    password: password
+    # Railway DATABASE_URL otomatik parse ediliyor (RailwayDatabaseConfig.java)
+    # Eğer DATABASE_URL yoksa, system properties veya default değerler kullanılır
+    url: ${spring.datasource.url:jdbc:postgresql://localhost:5433/camunda}
+    username: ${spring.datasource.username:UserPsiko}
+    password: ${spring.datasource.password:password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
