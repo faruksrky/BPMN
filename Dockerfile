@@ -1,9 +1,19 @@
-FROM eclipse-temurin:17-jre-alpine
+# Stage 1: Build
+FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
-# JAR'ı build et (multi-stage için maven gerekir - basit: önceden build edilmiş jar kopyala)
-# Build: ./mvnw package -DskipTests
-COPY target/*.jar app.jar
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+RUN ./mvnw dependency:go-offline -B
+
+COPY src src
+RUN ./mvnw package -DskipTests -B
+
+# Stage 2: Run
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]
