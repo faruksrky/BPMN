@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@FeignClient(name = "therapist-service", url = "http://localhost:8083")
+@FeignClient(name = "therapist-service", url = "${backend.url:http://localhost:8083}")
 public interface TherapistFeignClient {
 
     @PostMapping("/process/send-assignment-request")
