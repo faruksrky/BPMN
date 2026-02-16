@@ -20,15 +20,17 @@ git clone https://github.com/faruksrky/BPMN.git
 cd BPMN
 ```
 
-### 2. Docker Compose ile altyapıyı başlat
+### 2. Docker Compose ile tümünü başlat (Keycloak gibi)
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Servisler: postgres (5433), elasticsearch (9200), zeebe (26500), operate (8081), tasklist (8084)
+BPMN uygulaması da Docker'da build edilip çalışır – host'ta Java gerekmez.
 
-### 3. BPMN uygulamasını başlat
+Servisler: postgres (5433), elasticsearch (9200), zeebe (26500), operate (8081), tasklist (8084), **bpmn-app (8082)**
+
+### 3. Alternatif: Sadece Maven ile (host'ta Java gerekir)
 
 **Seçenek A - Maven ile:**
 ```bash
@@ -55,22 +57,16 @@ docker run -d --name bpmn --network host \
 
 ### 4. Nginx / Proxy – bpmn.iyihislerapp.com
 
-BPMN API için ayrı subdomain:
+Backend repo'daki hazır config ile:
 
-```nginx
-# /etc/nginx/sites-available/bpmn.iyihislerapp.com
-server {
-    listen 80;
-    server_name bpmn.iyihislerapp.com;
-    location / {
-        proxy_pass http://127.0.0.1:8082;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+cd ~/PsikoHekimBackend/nginx
+sudo cp bpmn.iyihislerapp.com.cloudflare.conf /etc/nginx/sites-available/bpmn.iyihislerapp.com
+sudo ln -sf /etc/nginx/sites-available/bpmn.iyihislerapp.com /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 ```
+
+Veya tüm domain'leri kurmak için: `sudo bash setup-cloudflare.sh`
 
 Cloudflare kullanıyorsan: DNS’e `bpmn.iyihislerapp.com` → sunucu IP ekle, proxy aç.
 
@@ -78,6 +74,19 @@ Cloudflare kullanıyorsan: DNS’e `bpmn.iyihislerapp.com` → sunucu IP ekle, p
 
 - **Frontend** `VITE_BPMN_BASE_URL`: `https://bpmn.iyihislerapp.com`
 - **Backend** `BPMN_SERVICE_URL`: `https://bpmn.iyihislerapp.com` (aynı sunucudaysa `http://localhost:8082`)
+
+## Sorun Giderme
+
+**postgresPsikoHekim sürekli Restarting ise:**
+
+1. Logları kontrol et: `docker logs postgresPsikoHekim`
+2. Volume bozuksa sıfırla (tüm BPMN verisi silinir):
+   ```bash
+   cd ~/BPMN
+   docker compose down
+   docker volume rm bpmn_postgres_data 2>/dev/null || true
+   docker compose up -d --build
+   ```
 
 ## Port Özeti
 
