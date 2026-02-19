@@ -121,7 +121,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       BACKEND_URL: https://api.iyihislerapp.com
-      ZEEBE_GATEWAY: http://zeebe:26500
+      ZEEBE_GATEWAY: zeebe:26500
       DATABASE_URL: jdbc:postgresql://postgres:5432/camunda
       DATABASE_USER: camunda
       DATABASE_PASSWORD: camunda
