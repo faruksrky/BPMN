@@ -5,7 +5,8 @@ server:
 camunda:
   client:
     zeebe:
-      base-url: ${ZEEBE_GATEWAY:localhost:26500}
+      # Tam URL gerekli (zeebe:26500 değil, http://zeebe:26500)
+      base-url: ${ZEEBE_GATEWAY:http://localhost:26500}
     security:
       plaintext: true
 
