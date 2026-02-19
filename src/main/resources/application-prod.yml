@@ -9,6 +9,8 @@ camunda:
       base-url: ${ZEEBE_GATEWAY:http://localhost:26500}
     security:
       plaintext: true
+      # Topology 0.0.0.0 döndürüyorsa gRPC authority override (Connection refused düzeltmesi)
+      override-authority: zeebe
 
 backend:
   url: ${BACKEND_URL:https://api.iyihislerapp.com}
