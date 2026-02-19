@@ -16,7 +16,9 @@ public class BpmnProcessService {
 
     private final ZeebeClient zeebeClient;
     public Map<String, Object> startTherapistAssignmentProcess(Map<String, Object> data) {
-        Map<String, Object> variables = (Map<String, Object>) data.get("variables");
+        Map<String, Object> variables = data.get("variables") != null
+                ? (Map<String, Object>) data.get("variables")
+                : data;
 
         // Gerekli alanları kontrol et
         String patientId = String.valueOf(variables.get("patientId"));
@@ -24,10 +26,20 @@ public class BpmnProcessService {
         String processName = String.valueOf(variables.get("processName"));
         String description = String.valueOf(variables.get("description"));
         String startedBy = String.valueOf(variables.get("startedBy"));
+        String scheduledDate = variables.get("scheduledDate") != null ? String.valueOf(variables.get("scheduledDate")) : null;
+        String sessionType = variables.get("sessionType") != null ? String.valueOf(variables.get("sessionType")) : "INDIVIDUAL";
+        String sessionFormat = variables.get("sessionFormat") != null && !String.valueOf(variables.get("sessionFormat")).isBlank()
+                ? String.valueOf(variables.get("sessionFormat")) : "IN_PERSON";
 
-        // Zorunlu alanları kontrol et
-        if (patientId == null || therapistId == null || processName == null || description == null || startedBy == null) {
-            throw new RuntimeException("Eksik parametre: patientId, therapistId, processName, description ve startedBy alanları zorunludur");
+        // Zorunlu alanlar (scheduledDate opsiyonel - danışman onayında belirlenir)
+        if (patientId == null || "null".equals(patientId) || therapistId == null || "null".equals(therapistId)
+                || processName == null || "null".equals(processName) || description == null || "null".equals(description)
+                || startedBy == null || "null".equals(startedBy)) {
+            throw new RuntimeException("Eksik parametre: patientId, therapistId, processName, description, startedBy alanları zorunludur");
+        }
+
+        if (scheduledDate == null || "null".equals(scheduledDate) || scheduledDate.isBlank()) {
+            scheduledDate = LocalDateTime.now().plusDays(1).toString();
         }
 
         try {
@@ -42,6 +54,9 @@ public class BpmnProcessService {
             allVariables.put("createdAt", LocalDateTime.now().toString());
             allVariables.put("updatedAt", LocalDateTime.now().toString());
             allVariables.put("TherapistDecision", "PENDING");
+            allVariables.put("scheduledDate", scheduledDate);
+            allVariables.put("sessionType", sessionType);
+            allVariables.put("sessionFormat", sessionFormat != null && !sessionFormat.isBlank() ? sessionFormat : "IN_PERSON");
 
             // BPMN sürecini başlat
             ProcessInstanceEvent instance = zeebeClient.newCreateInstanceCommand()
