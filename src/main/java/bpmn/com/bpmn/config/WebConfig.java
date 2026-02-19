@@ -19,12 +19,15 @@ public class WebConfig {
         http.cors(cors -> cors.configurationSource(request -> {
             var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
             corsConfiguration.setAllowedOriginPatterns(List.of(
-            "http://localhost:3031",  // Local development
-                    // Cloudflare Pages Production
+                    "http://localhost:3031",
+                    "http://localhost:5173",
+                    "https://psikohekimfrontend.pages.dev",
                     "https://*.psikohekimfrontend.pages.dev",
-                    "https://*.iyihislerapp.com"
-            ));// Cloudflare preview deployments (opsiyonel)
-            corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+                    "https://*.iyihislerapp.com",
+                    "https://iyihislerapp.com",
+                    "https://www.iyihislerapp.com"
+            ));
+            corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             corsConfiguration.setAllowedHeaders(List.of("*"));
             corsConfiguration.setAllowCredentials(true);
             return corsConfiguration;
