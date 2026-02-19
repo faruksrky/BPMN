@@ -66,6 +66,9 @@ services:
       - ZEEBE_BROKER_GATEWAY_HOST=0.0.0.0
       - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
       - ZEEBE_BROKER_NETWORK_ADVERTISEDHOST=zeebe
+      # Client'lara advertise edilen adres (0.0.0.0 yerine zeebe - Connection refused düzeltmesi)
+      - ZEEBE_BROKER_GATEWAY_NETWORK_ADVERTISEDHOST=zeebe
+      - ZEEBE_BROKER_GATEWAY_NETWORK_ADVERTISEDPORT=26500
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
