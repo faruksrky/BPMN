@@ -1,0 +1,11 @@
+# FALLBACK: override-authority çalışmazsa kullanın
+# bpmn-app host network ile 127.0.0.1:26500'e bağlanır (zeebe port map)
+# Kullanım: docker compose -f compose.yaml -f compose.host-zeebe.override.yml up -d --build
+
+services:
+  bpmn-app:
+    network_mode: host
+    environment:
+      ZEEBE_GATEWAY: http://127.0.0.1:26500
+      # Host'ta postgres 5433, elasticsearch 9200 expose
+      DATABASE_URL: jdbc:postgresql://127.0.0.1:5433/camunda
