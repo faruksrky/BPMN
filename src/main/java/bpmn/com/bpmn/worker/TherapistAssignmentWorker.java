@@ -22,9 +22,20 @@ public class TherapistAssignmentWorker {
 
     @PostConstruct
     public void startWorkers() {
+        startCreateAppointmentDraftWorker();
         startSendAssignmentRequestWorker();
         startAssignTherapistWorker();
         startRejectAssignmentWorker();
+        startFinalizeAppointmentWorker();
+        startCancelAppointmentWorker();
+    }
+
+    private void startCreateAppointmentDraftWorker() {
+        zeebeClient.newWorker()
+                .jobType("create-appointment-draft")
+                .handler(this::handleCreateAppointmentDraft)
+                .name("create-appointment-draft-worker")
+                .open();
     }
 
     private void startSendAssignmentRequestWorker() {
@@ -49,6 +60,33 @@ public class TherapistAssignmentWorker {
                 .handler(this::handleRejectAssignment)
                 .name("reject-assignment-worker")
                 .open();
+    }
+
+    private void startFinalizeAppointmentWorker() {
+        zeebeClient.newWorker()
+                .jobType("finalize-appointment")
+                .handler(this::handleFinalizeAppointment)
+                .name("finalize-appointment-worker")
+                .open();
+    }
+
+    private void startCancelAppointmentWorker() {
+        zeebeClient.newWorker()
+                .jobType("cancel-appointment")
+                .handler(this::handleCancelAppointment)
+                .name("cancel-appointment-worker")
+                .open();
+    }
+
+    private void handleCreateAppointmentDraft(JobClient client, ActivatedJob job) {
+        try {
+            Map<String, Object> vars = job.getVariablesAsMap();
+            validateRequiredVariables(vars, "patientId", "therapistId", "scheduledDate", "sessionType");
+            completeJob(client, job);
+            log.info("Successfully completed create-appointment-draft");
+        } catch (Exception e) {
+            handleError(client, job, e, "create-appointment-draft");
+        }
     }
 
     private void handleSendAssignmentRequest(JobClient client, ActivatedJob job) {
@@ -83,21 +121,56 @@ public class TherapistAssignmentWorker {
         }
     }
 
+    private void handleFinalizeAppointment(JobClient client, ActivatedJob job) {
+        try {
+            completeJob(client, job);
+            log.info("Successfully completed finalize-appointment");
+        } catch (Exception e) {
+            handleError(client, job, e, "finalize-appointment");
+        }
+    }
+
+    private void handleCancelAppointment(JobClient client, ActivatedJob job) {
+        try {
+            completeJob(client, job);
+            log.info("Successfully completed cancel-appointment");
+        } catch (Exception e) {
+            handleError(client, job, e, "cancel-appointment");
+        }
+    }
+
     private Map<String, Object> createRequestFromJob(ActivatedJob job) {
         Map<String, Object> vars = job.getVariablesAsMap();
-        // Tüm değişkenleri al
         Map<String, Object> request = new HashMap<>();
 
-        // processInstanceKey'i job'dan al
         String processInstanceKey = String.valueOf(job.getProcessInstanceKey());
         request.put("patientId", String.valueOf(vars.get("patientId")));
-        request.put("processInstanceKey", processInstanceKey); // Job'dan alınan key'i kullan
+        request.put("processInstanceKey", processInstanceKey);
         request.put("therapistId", String.valueOf(vars.get("therapistId")));
         request.put("processName", String.valueOf(vars.get("processName")));
         request.put("description", String.valueOf(vars.get("description")));
         request.put("startedBy", String.valueOf(vars.get("startedBy")));
         request.put("createdAt", vars.get("createdAt"));
         request.put("updatedAt", vars.get("updatedAt"));
+
+        // Backend zorunlu alanlar - null/boş ise varsayılan değer
+        Object scheduledDate = vars.get("scheduledDate");
+        if (scheduledDate == null || String.valueOf(scheduledDate).trim().isEmpty() || "null".equals(String.valueOf(scheduledDate))) {
+            scheduledDate = java.time.LocalDateTime.now().plusDays(1).toString();
+        }
+        request.put("scheduledDate", scheduledDate);
+
+        Object sessionType = vars.get("sessionType");
+        if (sessionType == null || String.valueOf(sessionType).trim().isEmpty() || "null".equals(String.valueOf(sessionType))) {
+            sessionType = "REGULAR";
+        }
+        request.put("sessionType", sessionType);
+
+        Object sessionFormat = vars.get("sessionFormat");
+        if (sessionFormat == null || String.valueOf(sessionFormat).trim().isEmpty() || "null".equals(String.valueOf(sessionFormat))) {
+            sessionFormat = "IN_PERSON";
+        }
+        request.put("sessionFormat", sessionFormat);
 
         return request;
     }
